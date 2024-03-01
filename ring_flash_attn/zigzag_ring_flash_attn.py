@@ -12,9 +12,6 @@ def zigzag_ring_flash_attn_forward(
     softmax_scale,
     dropout_p=0,
     causal=True,
-    window_size=(-1, -1),
-    alibi_slopes=None,
-    deterministic=False,
 ):
     assert causal == True, "zigzag ring is meaningless for causal=False"
     comm = RingComm(process_group)
@@ -27,15 +24,13 @@ def zigzag_ring_flash_attn_forward(
     next_k, next_v = None, None
 
     def forward(q, k, v, causal):
-        block_out, _, _, _, _, block_lse, _, _ = _flash_attn_forward(
+        block_out, _, _, _, _, block_lse, _ = _flash_attn_forward(
             q,
             k,
             v,
             dropout_p,
             softmax_scale,
             causal=causal,
-            window_size=window_size,
-            alibi_slopes=alibi_slopes,
             return_softmax=True and dropout_p > 0,
         )
         return block_out, block_lse
@@ -85,9 +80,6 @@ def zigzag_ring_flash_attn_backward(
     softmax_scale,
     dropout_p=0,
     causal=True,
-    window_size=(-1, -1),
-    alibi_slopes=None,
-    deterministic=False,
 ):
     assert causal == True, "zigzag ring is meaningless for causal=False"
     kv_comm = RingComm(process_group)
@@ -124,10 +116,6 @@ def zigzag_ring_flash_attn_backward(
             dropout_p,
             softmax_scale,
             causal,
-            window_size,
-            alibi_slopes,
-            deterministic,
-            rng_state=None,
         )
 
     for step in range(kv_comm.world_size):
@@ -187,16 +175,12 @@ class ZigZagRingFlashAttnFunc(torch.autograd.Function):
         dropout_p,
         softmax_scale,
         causal,
-        window_size,
-        alibi_slopes,
-        deterministic,
         return_softmax,
         group,
     ):
         if softmax_scale is None:
             softmax_scale = q.shape[-1] ** (-0.5)
 
-        assert alibi_slopes is None
         k = k.contiguous()
         v = v.contiguous()
         out, softmax_lse = zigzag_ring_flash_attn_forward(
@@ -207,18 +191,12 @@ class ZigZagRingFlashAttnFunc(torch.autograd.Function):
             softmax_scale=softmax_scale,
             dropout_p=dropout_p,
             causal=causal,
-            window_size=window_size,
-            alibi_slopes=alibi_slopes,
-            deterministic=False,
         )
         # this should be out_padded
         ctx.save_for_backward(q, k, v, out, softmax_lse)
         ctx.dropout_p = dropout_p
         ctx.softmax_scale = softmax_scale
         ctx.causal = causal
-        ctx.window_size = window_size
-        ctx.alibi_slopes = alibi_slopes
-        ctx.deterministic = deterministic
         ctx.group = group
         return out if not return_softmax else (out, softmax_lse, None)
 
@@ -236,9 +214,6 @@ class ZigZagRingFlashAttnFunc(torch.autograd.Function):
             softmax_scale=ctx.softmax_scale,
             dropout_p=ctx.dropout_p,
             causal=ctx.causal,
-            window_size=ctx.window_size,
-            alibi_slopes=ctx.alibi_slopes,
-            deterministic=ctx.deterministic,
         )
         return dq, dk, dv, None, None, None, None, None, None, None, None
 
@@ -248,9 +223,6 @@ def zigzag_ring_flash_attn_qkvpacked_func(
     dropout_p=0.0,
     softmax_scale=None,
     causal=False,
-    window_size=(-1, -1),
-    alibi_slopes=None,
-    deterministic=False,
     return_attn_probs=False,
     group=None,
 ):
@@ -261,9 +233,6 @@ def zigzag_ring_flash_attn_qkvpacked_func(
         dropout_p,
         softmax_scale,
         causal,
-        window_size,
-        alibi_slopes,
-        deterministic,
         return_attn_probs,
         group,
     )
@@ -275,9 +244,6 @@ def zigzag_ring_flash_attn_kvpacked_func(
     dropout_p=0.0,
     softmax_scale=None,
     causal=False,
-    window_size=(-1, -1),
-    alibi_slopes=None,
-    deterministic=False,
     return_attn_probs=False,
     group=None,
 ):
@@ -288,9 +254,6 @@ def zigzag_ring_flash_attn_kvpacked_func(
         dropout_p,
         softmax_scale,
         causal,
-        window_size,
-        alibi_slopes,
-        deterministic,
         return_attn_probs,
         group,
     )
@@ -303,9 +266,6 @@ def zigzag_ring_flash_attn_func(
     dropout_p=0.0,
     softmax_scale=None,
     causal=False,
-    window_size=(-1, -1),
-    alibi_slopes=None,
-    deterministic=False,
     return_attn_probs=False,
     group=None,
 ):
@@ -316,9 +276,6 @@ def zigzag_ring_flash_attn_func(
         dropout_p,
         softmax_scale,
         causal,
-        window_size,
-        alibi_slopes,
-        deterministic,
         return_attn_probs,
         group,
     )

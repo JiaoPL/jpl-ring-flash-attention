@@ -33,14 +33,15 @@ def log(msg, a, rank0_only=False):
 
 
 if __name__ == "__main__":
-    dist.init_process_group("nccl")
-    rank = dist.get_rank()
-    world_size = dist.get_world_size()
+    import os
+    rank = int(os.environ["SLURM_PROCID"])
+    world_size = int(os.environ["SLURM_NPROCS"])
+    dist.init_process_group("nccl",init_method=f"tcp://[localhost]:12345",rank = rank, world_size = world_size)
     dtype = torch.bfloat16
     device = torch.device(f"cuda:{rank}")
 
     batch_size = 1
-    seqlen = 3816
+    seqlen = 1024*8
     nheads = 5
     d = 128
     dropout_p = 0
@@ -72,9 +73,6 @@ if __name__ == "__main__":
         qkv,
         dropout_p=dropout_p,
         causal=causal,
-        window_size=(-1, -1),
-        alibi_slopes=None,
-        deterministic=deterministic,
         return_attn_probs=True,
     )
 
@@ -87,9 +85,6 @@ if __name__ == "__main__":
         local_qkv,
         dropout_p=dropout_p,
         causal=causal,
-        window_size=(-1, -1),
-        alibi_slopes=None,
-        deterministic=deterministic,
         return_attn_probs=True,
     )
 

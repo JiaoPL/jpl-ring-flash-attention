@@ -9,7 +9,7 @@ from ring_flash_attn import (
 import torch.cuda
 
 
-def benchmark(f, num_iter=100, forward_only=True, log=True):
+def benchmark(f, num_iter=50, forward_only=True, log=True):
     dtype = torch.bfloat16
     rank = dist.get_rank()
     world_size = dist.get_world_size()
@@ -17,7 +17,7 @@ def benchmark(f, num_iter=100, forward_only=True, log=True):
     torch.cuda.set_device(device)
 
     batch_size = 1
-    seqlen = 1024 * 8
+    seqlen = 1024 * 4
     nheads = 5
     d = 128
     dropout_p = 0
@@ -42,9 +42,6 @@ def benchmark(f, num_iter=100, forward_only=True, log=True):
                     qkv,
                     dropout_p=dropout_p,
                     causal=causal,
-                    window_size=(-1, -1),
-                    alibi_slopes=None,
-                    deterministic=deterministic,
                     return_attn_probs=False,
                 )
 
@@ -55,9 +52,6 @@ def benchmark(f, num_iter=100, forward_only=True, log=True):
                 qkv,
                 dropout_p=dropout_p,
                 causal=causal,
-                window_size=(-1, -1),
-                alibi_slopes=None,
-                deterministic=deterministic,
                 return_attn_probs=False,
             )
             out.backward(dout)
@@ -71,8 +65,10 @@ def benchmark(f, num_iter=100, forward_only=True, log=True):
 
 
 if __name__ == "__main__":
-    dist.init_process_group("nccl")
-    rank = dist.get_rank()
+    import os
+    rank = int(os.environ["SLURM_PROCID"])
+    world_size = int(os.environ["SLURM_NPROCS"])
+    dist.init_process_group("nccl",init_method=f"tcp://[localhost]:12345",rank = rank, world_size = world_size)
 
     forward_only = False
 

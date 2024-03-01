@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 
 import torch
 import torch.distributed as dist
+import time
 
 __all__ = ["update_out_and_lse", "RingComm"]
 
