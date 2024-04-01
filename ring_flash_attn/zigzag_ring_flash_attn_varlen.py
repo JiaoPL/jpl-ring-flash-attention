@@ -78,7 +78,7 @@ def zigzag_ring_flash_attn_varlen_forward(
         max_seqlen_q = half_max_seqlen if seqlen_q == block_seq_len else max_seqlen
         cu_seqlens_kv = half_cu_seqlens if seqlen_kv == block_seq_len else cu_seqlens
         max_seqlen_kv = half_max_seqlen if seqlen_kv == block_seq_len else max_seqlen
-        block_out, _, _, _, _, block_lse, _ = _flash_attn_varlen_forward(
+        block_out, _, _, _, _, block_lse, _, _ = _flash_attn_varlen_forward(
             q,
             k,
             v,

@@ -27,7 +27,7 @@ def ring_flash_attn_forward(
             comm.commit()
 
         if not causal or step <= comm.rank:
-            block_out, _, _, _, _, block_lse, _ = _flash_attn_forward(
+            block_out, _, _, _, _, block_lse, _, _ = _flash_attn_forward(
                 q,
                 k,
                 v,

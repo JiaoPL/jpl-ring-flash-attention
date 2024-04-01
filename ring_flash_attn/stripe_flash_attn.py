@@ -30,7 +30,7 @@ def stripe_flash_attn_forward(
             comm.commit()
 
         if step <= comm.rank:
-            block_out, _, _, _, _, block_lse, _, = _flash_attn_forward(
+            block_out, _, _, _, _, block_lse, _, _ = _flash_attn_forward(
                 q,
                 k,
                 v,
@@ -41,7 +41,7 @@ def stripe_flash_attn_forward(
             )
             out, lse = update_out_and_lse(out, lse, block_out, block_lse)
         else:
-            block_out, _, _, _, _, block_lse, _ = _flash_attn_forward(
+            block_out, _, _, _, _, block_lse, _, _ = _flash_attn_forward(
                 q[:, 1:],
                 k[:, :-1],
                 v[:, :-1],

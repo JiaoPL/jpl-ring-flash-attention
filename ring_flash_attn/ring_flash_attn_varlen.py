@@ -35,7 +35,7 @@ def ring_flash_attn_varlen_forward(
             next_v: torch.Tensor = comm.send_recv(v)
             comm.commit()
         if not causal or step <= comm.rank:
-            block_out, _, _, _, _, block_lse, _ = _flash_attn_varlen_forward(
+            block_out, _, _, _, _, block_lse, _, _ = _flash_attn_varlen_forward(
                 q,
                 k,
                 v,
@@ -48,6 +48,7 @@ def ring_flash_attn_varlen_forward(
                 causal=causal and step == 0,
                 return_softmax=True and dropout_p > 0,
             )
+            # import pdb;pdb.set_trace()
             block_lse = flatten_varlen_lse(
                 block_lse,
                 cu_seqlens=cu_seqlens,
@@ -168,6 +169,7 @@ class RingFlashAttnVarlenFunc(torch.autograd.Function):
 
         k = k.contiguous()
         v = v.contiguous()
+        # import pdb;pdb.set_trace()
         out, softmax_lse = ring_flash_attn_varlen_forward(
             group,
             q,

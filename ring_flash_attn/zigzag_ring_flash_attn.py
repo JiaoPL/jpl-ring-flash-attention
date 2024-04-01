@@ -24,7 +24,7 @@ def zigzag_ring_flash_attn_forward(
     next_k, next_v = None, None
 
     def forward(q, k, v, causal):
-        block_out, _, _, _, _, block_lse, _ = _flash_attn_forward(
+        block_out, _, _, _, _, block_lse, _, _  = _flash_attn_forward(
             q,
             k,
             v,
